@@ -34,6 +34,20 @@ from failure_tracker.output import (
 
 
 def build_parser() -> argparse.ArgumentParser:
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument(
+        "--database",
+        type=Path,
+        default=argparse.SUPPRESS,
+        help="SQLite database path (defaults to FAILURE_TRACKER_DB or XDG data dir)",
+    )
+    common.add_argument(
+        "--json",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="Emit machine-readable JSON",
+    )
+
     parser = argparse.ArgumentParser(
         prog="failure-tracker",
         description="Track recurring workflow, skill, and tool failures in SQLite.",
@@ -57,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
-    rec = subparsers.add_parser("record", help="Record a failure occurrence")
+    rec = subparsers.add_parser("record", parents=[common], help="Record a failure occurrence")
     rec.add_argument("--repo", required=True, help="Target repository name or owner/repo")
     rec.add_argument("--ref", required=True, help="Target file, skill, or module path")
     rec.add_argument("--kind", required=True, choices=FAILURE_KINDS, help="Failure category")
@@ -75,7 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     rec.add_argument("--context-json", default=None, help="JSON object with extra context")
     rec.add_argument("--actor", default=None, help="Human or agent identity")
 
-    lst = subparsers.add_parser("list", help="List failure patterns")
+    lst = subparsers.add_parser("list", parents=[common], help="List failure patterns")
     lst.add_argument("--status", choices=PATTERN_STATUSES, default=None)
     lst.add_argument("--repo", default=None)
     lst.add_argument("--kind", choices=FAILURE_KINDS, default=None)
@@ -84,19 +98,19 @@ def build_parser() -> argparse.ArgumentParser:
     lst.add_argument("--all", action="store_true", help="Include verified, wontfix, and duplicate patterns")
     lst.add_argument("--limit", type=int, default=100)
 
-    show = subparsers.add_parser("show", help="Show one failure pattern with occurrences and attempts")
+    show = subparsers.add_parser("show", parents=[common], help="Show one failure pattern with occurrences and attempts")
     show.add_argument("pattern_id", type=int)
     show.add_argument("--occurrences", type=int, default=10)
     show.add_argument("--attempts", type=int, default=20)
 
-    claim = subparsers.add_parser("claim", help="Lease an open or expired-lease failure pattern")
+    claim = subparsers.add_parser("claim", parents=[common], help="Lease an open or expired-lease failure pattern")
     claim.add_argument("--repo", default=None, help="Filter queue by target repository")
     claim.add_argument("--id", dest="pattern_id", type=int, default=None, help="Claim one specific pattern ID")
     claim.add_argument("--actor", default=None, help="Worker actor identity")
     claim.add_argument("--ttl", default="30m", help="Lease duration such as 30m or 2h")
     claim.add_argument("--max-failed-attempts", type=int, default=2)
 
-    attempt = subparsers.add_parser("attempt", help="Record an improvement attempt outcome")
+    attempt = subparsers.add_parser("attempt", parents=[common], help="Record an improvement attempt outcome")
     attempt.add_argument("pattern_id", type=int)
     attempt.add_argument("--outcome", required=True, choices=ATTEMPT_OUTCOMES)
     attempt.add_argument("--actor", default=None)
@@ -109,7 +123,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep claimed status even on failed/blocked/abandoned outcomes",
     )
 
-    resolve = subparsers.add_parser("resolve", help="Resolve a failure pattern")
+    resolve = subparsers.add_parser("resolve", parents=[common], help="Resolve a failure pattern")
     resolve.add_argument("pattern_id", type=int)
     resolve.add_argument("--status", choices=RESOLVABLE_STATUSES, default="fixed_unverified")
     resolve.add_argument("--fix-layer", choices=FIX_LAYERS, default=None)
@@ -119,8 +133,8 @@ def build_parser() -> argparse.ArgumentParser:
     resolve.add_argument("--note", default=None)
     resolve.add_argument("--actor", default=None)
 
-    subparsers.add_parser("doctor", help="Check database, schema, integrity, and actor without writing")
-    subparsers.add_parser("path", help="Print the SQLite database path in use")
+    subparsers.add_parser("doctor", parents=[common], help="Check database, schema, integrity, and actor without writing")
+    subparsers.add_parser("path", parents=[common], help="Print the SQLite database path in use")
     return parser
 
 

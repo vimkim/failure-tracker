@@ -428,7 +428,7 @@ class CliSubprocessTests(unittest.TestCase):
         self.assertEqual(path_proc.returncode, 0, path_proc.stderr)
         self.assertEqual(path_proc.stdout.strip(), str(self.db_path))
 
-        doc_before = self.run_cli("--json", "doctor")
+        doc_before = self.run_cli("doctor", "--json")
         self.assertEqual(doc_before.returncode, 0, doc_before.stderr)
         self.assertTrue(json.loads(doc_before.stdout)["ok"])
         self.assertFalse(self.db_path.exists())
